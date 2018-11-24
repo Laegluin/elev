@@ -21,13 +21,13 @@ use winapi::um::winbase::{INFINITE, WAIT_FAILED};
 use winapi::um::wincon::{AttachConsole, FreeConsole, ATTACH_PARENT_PROCESS};
 use winapi::um::winuser::SW_HIDE;
 
-pub fn start_runner() -> Result<i32, io::Error> {
+pub fn start_runner(command_line: impl IntoIterator<Item = OsString>) -> Result<i32, io::Error> {
     // TODO: don't use current_exe to make this safe
     let elev_runner = env::current_exe()?.join("../elev-runner.exe");
 
     let verb = into_wide_str("runas");
     let program = into_wide_str(elev_runner);
-    let args = encode_windows_args(env::args_os().skip(1).collect());
+    let args = encode_windows_args(command_line.into_iter().collect());
 
     let mut info = SHELLEXECUTEINFOW {
         cbSize: mem::size_of::<SHELLEXECUTEINFOW>() as u32,
