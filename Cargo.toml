@@ -1,0 +1,38 @@
+[package]
+name = "elev"
+version = "0.1.0"
+authors = ["Robin Mirow <robinmirow@live.com>"]
+build = "build.rs"
+autobins = false
+
+[features]
+default = []
+require-elevation = []
+
+[[bin]]
+name = "elev-runner"
+path = "src/bin/elev_runner.rs"
+
+[[bin]]
+name = "elev"
+path = "src/bin/elev.rs"
+
+[dependencies]
+
+[dependencies.winapi]
+version = "0.3.6"
+features = [
+    "shellapi",
+    "winuser",
+    "minwindef",
+    "combaseapi",
+    "ntdef",
+    "objbase",
+    "synchapi",
+    "winbase",
+    "processthreadsapi",
+    "wincon",
+]
+
+[build-dependencies]
+embed-resource = "1.1.4"
