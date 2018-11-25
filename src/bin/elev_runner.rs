@@ -3,13 +3,24 @@ compile_error!("this crate only supports windows");
 
 extern crate elev;
 
+use std::env;
+use std::io;
+use std::path::Path;
 use std::process;
 
 fn main() {
-    match elev::start_elevated() {
+    let command_line: Vec<_> = env::args_os().skip(1).collect();
+    let program = command_line[0].clone();
+
+    match elev::start_elevated(command_line) {
         Ok(exit_code) => process::exit(exit_code),
         Err(why) => {
-            eprintln!("{}", why);
+            if why.kind() == io::ErrorKind::NotFound {
+                eprintln!("error: cannot find '{}'", Path::new(&program).display());
+            } else {
+                eprintln!("error: {}", why);
+            }
+
             process::exit(i32::min_value())
         }
     }

@@ -135,7 +135,7 @@ fn encode_windows_args(args: Vec<OsString>) -> Vec<u16> {
     escaped
 }
 
-pub fn start_elevated() -> Result<i32, io::Error> {
+pub fn start_elevated(command_line: impl IntoIterator<Item = OsString>) -> Result<i32, io::Error> {
     unsafe {
         if FreeConsole() == FALSE {
             return Err(io::Error::last_os_error());
@@ -146,7 +146,7 @@ pub fn start_elevated() -> Result<i32, io::Error> {
         }
     }
 
-    let args: Vec<_> = env::args().skip(1).collect();
+    let args: Vec<_> = command_line.into_iter().collect();
     let status = Command::new(&args[0]).args(&args[1..]).status()?;
 
     // on windows, code() is always Some
