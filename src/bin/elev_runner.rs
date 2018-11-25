@@ -16,9 +16,9 @@ fn main() {
         Ok(exit_code) => process::exit(exit_code),
         Err(why) => {
             if why.kind() == io::ErrorKind::NotFound {
-                eprintln!("error: cannot find '{}'", Path::new(&program).display());
+                let _ = elev::print_err(format!("cannot find '{}'", Path::new(&program).display()));
             } else {
-                eprintln!("error: {}", why);
+                let _ = elev::print_err(why);
             }
 
             process::exit(i32::min_value())

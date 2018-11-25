@@ -4,6 +4,7 @@ compile_error!("this crate only supports windows");
 extern crate clap;
 extern crate elev;
 
+
 use clap::{crate_authors, crate_version, App, Arg};
 use std::env;
 use std::ffi::OsString;
@@ -31,7 +32,7 @@ fn main() {
     match elev::start_runner(args.into_iter().skip(1)) {
         Ok(exit_code) => process::exit(exit_code),
         Err(why) => {
-            eprintln!("{}", why);
+            let _ = elev::print_err(why);        
             process::exit(i32::min_value())
         }
     }

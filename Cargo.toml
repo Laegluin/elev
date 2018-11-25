@@ -20,6 +20,7 @@ path = "src/bin/elev.rs"
 [dependencies]
 clap = "2.32.0"
 scopeguard = "0.3.3"
+termcolor = "1.0.4"
 
 [dependencies.winapi]
 version = "0.3.6"

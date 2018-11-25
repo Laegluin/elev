@@ -1,18 +1,22 @@
-extern crate winapi;
 extern crate scopeguard;
+extern crate termcolor;
+extern crate winapi;
 
+use scopeguard::defer;
 use std::env;
 use std::ffi::OsString;
+use std::fmt::Display;
 use std::io;
-use scopeguard::defer;
+use std::io::Write;
 use std::mem;
 use std::os::windows::ffi::OsStrExt;
 use std::process::Command;
 use std::ptr;
+use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 use winapi::shared::minwindef::FALSE;
 use winapi::shared::ntdef::NULL;
 use winapi::shared::winerror::{E_INVALIDARG, E_OUTOFMEMORY, E_UNEXPECTED};
-use winapi::um::combaseapi::{CoInitializeEx, CoUninitialize };
+use winapi::um::combaseapi::{CoInitializeEx, CoUninitialize};
 use winapi::um::objbase::{COINIT_APARTMENTTHREADED, COINIT_DISABLE_OLE1DDE};
 use winapi::um::processthreadsapi::GetExitCodeProcess;
 use winapi::um::shellapi::{
@@ -164,6 +168,17 @@ pub fn start_elevated(command_line: impl IntoIterator<Item = OsString>) -> Resul
 
     // on windows, code() is always Some
     Ok(status.code().unwrap())
+}
+
+pub fn print_err(err: impl Display) -> Result<(), io::Error> {
+    let mut stderr = StandardStream::stderr(ColorChoice::Auto);
+    let mut err_spec = ColorSpec::new();
+    err_spec.set_bold(true).set_fg(Some(Color::Red));
+
+    stderr.set_color(&err_spec)?;
+    write!(&mut stderr, "error: ")?;
+    stderr.set_color(&ColorSpec::new())?;
+    writeln!(&mut stderr, "{}", err)
 }
 
 #[cfg(test)]
