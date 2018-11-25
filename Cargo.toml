@@ -19,6 +19,7 @@ path = "src/bin/elev.rs"
 
 [dependencies]
 clap = "2.32.0"
+scopeguard = "0.3.3"
 
 [dependencies.winapi]
 version = "0.3.6"
@@ -33,6 +34,7 @@ features = [
     "winbase",
     "processthreadsapi",
     "wincon",
+    "winerror",
 ]
 
 [build-dependencies]

@@ -1,15 +1,18 @@
 extern crate winapi;
+extern crate scopeguard;
 
 use std::env;
 use std::ffi::OsString;
 use std::io;
+use scopeguard::defer;
 use std::mem;
 use std::os::windows::ffi::OsStrExt;
 use std::process::Command;
 use std::ptr;
 use winapi::shared::minwindef::FALSE;
 use winapi::shared::ntdef::NULL;
-use winapi::um::combaseapi::CoInitializeEx;
+use winapi::shared::winerror::{E_INVALIDARG, E_OUTOFMEMORY, E_UNEXPECTED};
+use winapi::um::combaseapi::{CoInitializeEx, CoUninitialize };
 use winapi::um::objbase::{COINIT_APARTMENTTHREADED, COINIT_DISABLE_OLE1DDE};
 use winapi::um::processthreadsapi::GetExitCodeProcess;
 use winapi::um::shellapi::{
@@ -20,6 +23,21 @@ use winapi::um::synchapi::WaitForSingleObject;
 use winapi::um::winbase::{INFINITE, WAIT_FAILED};
 use winapi::um::wincon::{AttachConsole, FreeConsole, ATTACH_PARENT_PROCESS};
 use winapi::um::winuser::SW_HIDE;
+
+macro_rules! try_win32 {
+    ($call: expr, $($errs: expr),+) => {
+        let result = $call;
+
+        #[allow(unused_parens)]
+        let is_err = {
+            $((result == $errs))||+
+        };
+
+        if is_err {
+            return Err(io::Error::last_os_error());
+        }
+    };
+}
 
 pub fn start_runner(command_line: impl IntoIterator<Item = OsString>) -> Result<i32, io::Error> {
     // TODO: don't use current_exe to make this safe
@@ -48,12 +66,16 @@ pub fn start_runner(command_line: impl IntoIterator<Item = OsString>) -> Result<
     };
 
     unsafe {
-        // TODO: CoUninitialize
-        CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+        try_win32!(
+            CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE),
+            E_INVALIDARG,
+            E_OUTOFMEMORY,
+            E_UNEXPECTED
+        );
 
-        if ShellExecuteExW(&mut info) == FALSE {
-            return Err(io::Error::last_os_error());
-        }
+        defer!(CoUninitialize());
+
+        try_win32!(ShellExecuteExW(&mut info), FALSE);
 
         if info.hProcess.is_null() {
             return Err(io::Error::new(
@@ -62,14 +84,10 @@ pub fn start_runner(command_line: impl IntoIterator<Item = OsString>) -> Result<
             ));
         }
 
-        if WaitForSingleObject(info.hProcess, INFINITE) == WAIT_FAILED {
-            return Err(io::Error::last_os_error());
-        }
+        try_win32!(WaitForSingleObject(info.hProcess, INFINITE), WAIT_FAILED);
 
         let mut exit_code = 0;
-        if GetExitCodeProcess(info.hProcess, &mut exit_code) == FALSE {
-            return Err(io::Error::last_os_error());
-        }
+        try_win32!(GetExitCodeProcess(info.hProcess, &mut exit_code), FALSE);
 
         Ok(exit_code as i32)
     }
@@ -137,13 +155,8 @@ fn encode_windows_args(args: Vec<OsString>) -> Vec<u16> {
 
 pub fn start_elevated(command_line: impl IntoIterator<Item = OsString>) -> Result<i32, io::Error> {
     unsafe {
-        if FreeConsole() == FALSE {
-            return Err(io::Error::last_os_error());
-        }
-
-        if AttachConsole(ATTACH_PARENT_PROCESS) == FALSE {
-            return Err(io::Error::last_os_error());
-        }
+        try_win32!(FreeConsole(), FALSE);
+        try_win32!(AttachConsole(ATTACH_PARENT_PROCESS), FALSE);
     }
 
     let args: Vec<_> = command_line.into_iter().collect();
