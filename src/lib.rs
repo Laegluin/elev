@@ -1,15 +1,19 @@
+extern crate hex;
 extern crate scopeguard;
+extern crate sha2;
 extern crate termcolor;
 extern crate winapi;
 
 use scopeguard::defer;
+use sha2::{Digest, Sha256};
 use std::env;
 use std::ffi::OsString;
 use std::fmt::Display;
-use std::io;
-use std::io::Write;
+use std::fs;
+use std::io::{self, Write};
 use std::mem;
 use std::os::windows::ffi::OsStrExt;
+use std::path::PathBuf;
 use std::process::Command;
 use std::ptr;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
@@ -44,11 +48,8 @@ macro_rules! try_win32 {
 }
 
 pub fn start_runner(command_line: impl IntoIterator<Item = OsString>) -> Result<i32, io::Error> {
-    // TODO: don't use current_exe to make this safe
-    let elev_runner = env::current_exe()?.join("../elev-runner.exe");
-
     let verb = into_wide_str("runas");
-    let program = into_wide_str(elev_runner);
+    let program = into_wide_str(find_runner()?);
     let args = encode_windows_args(command_line.into_iter().collect());
 
     let mut info = SHELLEXECUTEINFOW {
@@ -82,10 +83,7 @@ pub fn start_runner(command_line: impl IntoIterator<Item = OsString>) -> Result<
         try_win32!(ShellExecuteExW(&mut info), FALSE);
 
         if info.hProcess.is_null() {
-            return Err(io::Error::new(
-                io::ErrorKind::Other,
-                "the process handle is null".to_owned(),
-            ));
+            return io_err("the process handle is null");
         }
 
         try_win32!(WaitForSingleObject(info.hProcess, INFINITE), WAIT_FAILED);
@@ -95,6 +93,53 @@ pub fn start_runner(command_line: impl IntoIterator<Item = OsString>) -> Result<
 
         Ok(exit_code as i32)
     }
+}
+
+fn find_runner() -> Result<PathBuf, io::Error> {
+    // resolve all symlinks to elev, then look for elev-run next to it
+    let mut elev_run = env::current_exe()?;
+
+    while elev_run.metadata()?.file_type().is_symlink() {
+        elev_run = fs::read_link(elev_run)?
+    }
+
+    elev_run.pop();
+    elev_run.push("elev-run.exe");
+
+    if !elev_run.is_file() {
+        return io_err(format!(
+            "cannot find elev-run (tried '{}')",
+            elev_run.display()
+        ));
+    }
+
+    // compare the hash of elev-run with the one specified at build time
+    // this prevents security issues with hardlinks of elev, which would allow
+    // replacing elev-run without modifying elev itself
+    let expected_hash =
+        match option_env!("ELEV_RUN_SHA256") {
+            Some(hash) => hash,
+            None => return io_err(
+                "elev was compiled without specifying the hash of elev-run, running it is not safe",
+            ),
+        };
+
+    let mut hasher = Sha256::new();
+    hasher.input(fs::read(&elev_run)?);
+    let actual_hash = hex::encode(hasher.result());
+
+    if expected_hash == actual_hash {
+        Ok(elev_run)
+    } else {
+        io_err(format!(
+            "'{}' is not the correct version of elev-run",
+            elev_run.display()
+        ))
+    }
+}
+
+fn io_err<T>(msg: impl Into<String>) -> Result<T, io::Error> {
+    Err(io::Error::new(io::ErrorKind::Other, msg.into()))
 }
 
 /// Converts `string` to a null-terminated wstr.
