@@ -1,0 +1,24 @@
+language: rust
+os: windows
+rust:
+- stable
+- beta
+- nightly
+cache:
+  directories:
+  - "$HOME/.cargo"
+matrix:
+  fast_finish: true
+  allow_failures:
+  - rust: nightly
+
+before_deploy:
+- powershell deploy.ps1
+
+deploy:
+  provider: releases
+  api_key:
+    secure: z6BZT2eAP7AfKhb+eW+FbRrUSAoP+JmzrcBkZ9yl1ae1OMeD79Z/kxHxCEYTskSrhnafGDRr6uHDO8FKfFSg/c+l9/+1qoLrZdCqlCfgH1cAWMn+fnLqtZFf/oGzeNluZCnKZqiG20HbmEZgoHRq+LxgYt70VtSO/cI7wS9E9t9s7DA8H/LZH1siZqYJsUPLV404+d5JEmMfKk15W/iX3kHiMZNvsz2IvLtfksZU22pUOv+oJ02oC6HJH3DZVZao+YR2ttbJLGdnMIkmyxmXLpg6FczPcnAItYBEJSEbdpUG7vVc95PAmYJmxb3NLaS4sE50yPwbqCW/rg4KEk/gnsp2Vm2DXDX41CzvLy15PgLbnha+t3JYDDNuhX7FwPWSWHZP3MqFXNf7+uV11jdjlvuY5hgsxyFdHOLWpa/m4onwecMymvKS9l51y5Uz05yPPXVIcGLAL6g4ELpPYgykzsSU2EYKKQ/cdqYpJ8fe2aGTYjsAQEpE/bC/0dB69MSaW84wI0PQAsPDizeUCF5mZKMsk6INMqcgPFGak8LP+c5Dh94ClS4SuBMgpKQl1irJqT5L5QEolaxzq7GtYp9Dh0AD+Ir9YcG7wcfhLym31Q0MOgBpjLatamBXN8VpO9yeqcWCSIHRmTHBFpg5zLfUMaCBhhbO13pclTYAvqQBWrk=
+  file: target/release/*zip
+  on:
+    tags: true
