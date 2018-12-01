@@ -16,7 +16,7 @@ matrix:
   - rust: nightly
 
 script:
-  - powershell scripts/build.ps1 -ExecutionPolicy bypass
+  - powershell -ExecutionPolicy bypass scripts/build.ps1
 
 deploy:
   provider: releases
