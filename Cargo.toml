@@ -2,6 +2,7 @@
 name = "elev"
 version = "0.1.0"
 authors = ["Robin Mirow <robinmirow@live.com>"]
+license = "MIT OR Apache-2.0"
 build = "build.rs"
 autobins = false
 
