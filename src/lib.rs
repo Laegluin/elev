@@ -1,3 +1,6 @@
+#[cfg(not(windows))]
+compile_error!("this crate only supports windows");
+
 extern crate hex;
 extern crate scopeguard;
 extern crate sha2;
