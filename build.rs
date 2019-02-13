@@ -1,4 +1,4 @@
-extern crate embed_resource;
+use embed_resource;
 
 use std::env;
 

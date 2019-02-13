@@ -1,8 +1,6 @@
 #[cfg(not(windows))]
 compile_error!("this crate only supports windows");
 
-extern crate elev;
-
 use std::env;
 use std::io;
 use std::path::Path;

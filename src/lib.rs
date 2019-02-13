@@ -3,12 +3,6 @@
 #[cfg(not(windows))]
 compile_error!("this crate only supports windows");
 
-extern crate hex;
-extern crate scopeguard;
-extern crate sha2;
-extern crate termcolor;
-extern crate winapi;
-
 use scopeguard::defer;
 use sha2::{Digest, Sha256};
 use std::env;
@@ -165,7 +159,7 @@ fn encode_windows_args(args: Vec<OsString>) -> Vec<u16> {
     let mut escaped = Vec::new();
 
     for arg in args {
-        let mut arg: Vec<_> = arg.encode_wide().collect();
+        let arg: Vec<_> = arg.encode_wide().collect();
 
         let start_idx = escaped.len();
         let mut has_spaces = false;
