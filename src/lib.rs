@@ -165,9 +165,7 @@ fn encode_windows_args(args: Vec<OsString>) -> Vec<u16> {
     let mut escaped = Vec::new();
 
     for arg in args {
-        // remove the null terminator
-        let mut arg = into_wide_str(arg);
-        arg.pop();
+        let mut arg: Vec<_> = arg.encode_wide().collect();
 
         let start_idx = escaped.len();
         let mut has_spaces = false;
