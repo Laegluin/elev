@@ -1,3 +1,5 @@
+#![deny(bare_trait_objects)]
+
 #[cfg(not(windows))]
 compile_error!("this crate only supports windows");
 
