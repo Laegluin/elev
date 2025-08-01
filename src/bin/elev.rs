@@ -1,7 +1,7 @@
 #[cfg(not(windows))]
 compile_error!("this crate only supports windows");
 
-use clap::{crate_authors, crate_version, Arg, ArgAction, Command};
+use clap::{Arg, ArgAction, Command, crate_authors, crate_version};
 use std::env;
 use std::ffi::OsString;
 use std::process;

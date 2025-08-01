@@ -23,16 +23,16 @@ use winapi::um::combaseapi::{CoInitializeEx, CoUninitialize};
 use winapi::um::objbase::{COINIT_APARTMENTTHREADED, COINIT_DISABLE_OLE1DDE};
 use winapi::um::processthreadsapi::GetExitCodeProcess;
 use winapi::um::shellapi::{
-    ShellExecuteExW, SEE_MASK_FLAG_NO_UI, SEE_MASK_NOASYNC, SEE_MASK_NOCLOSEPROCESS,
-    SHELLEXECUTEINFOW,
+    SEE_MASK_FLAG_NO_UI, SEE_MASK_NOASYNC, SEE_MASK_NOCLOSEPROCESS, SHELLEXECUTEINFOW,
+    ShellExecuteExW,
 };
 use winapi::um::synchapi::WaitForSingleObject;
 use winapi::um::winbase::{INFINITE, WAIT_FAILED};
-use winapi::um::wincon::{AttachConsole, FreeConsole, ATTACH_PARENT_PROCESS};
+use winapi::um::wincon::{ATTACH_PARENT_PROCESS, AttachConsole, FreeConsole};
 use winapi::um::winuser::SW_HIDE;
 
 macro_rules! try_win32 {
-    ($call: expr, $($errs: expr),+) => {
+    ($call: expr_2021, $($errs: expr_2021),+) => {
         let result = $call;
 
         #[allow(unused_parens)]
@@ -115,13 +115,14 @@ fn find_runner() -> Result<PathBuf, io::Error> {
     // compare the hash of elev-run with the one specified at build time
     // this prevents security issues with hardlinks of elev, which would allow
     // replacing elev-run without modifying elev itself
-    let expected_hash =
-        match option_env!("ELEV_RUN_SHA256") {
-            Some(hash) => hash,
-            None => return io_err(
+    let expected_hash = match option_env!("ELEV_RUN_SHA256") {
+        Some(hash) => hash,
+        None => {
+            return io_err(
                 "elev was compiled without specifying the hash of elev-run, running it is not safe",
-            ),
-        };
+            );
+        }
+    };
 
     let actual_hash = hex::encode(Sha256::digest(fs::read(&elev_run)?));
 
