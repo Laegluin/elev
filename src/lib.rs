@@ -161,40 +161,45 @@ fn encode_windows_args(args: Vec<OsString>) -> Vec<u16> {
     let mut escaped = Vec::new();
 
     for arg in args {
+        if !escaped.is_empty() {
+            escaped.push(SPACE);
+        }
+
         let arg: Vec<_> = arg.encode_wide().collect();
 
         let start_idx = escaped.len();
         let mut has_spaces = false;
+        let mut num_consecutive_backslashes: usize = 0;
 
-        for (i, c) in arg.iter().enumerate() {
-            match *c {
-                QUOTE => escaped.extend_from_slice(&[BACKSLASH, QUOTE]),
-                // double backslash if it's followed by a quote or it's the last char and
-                // the arg contains whitespace (because that means it will be followed by a quote
-                // to escape the whitespace)
-                BACKSLASH
-                    if arg.get(i + 1) == Some(&QUOTE) || arg.get(i + 1) == None && has_spaces =>
-                {
-                    escaped.extend_from_slice(&[BACKSLASH, BACKSLASH])
-                }
-                whitespace if whitespace == SPACE || whitespace == TAB => {
+        for c in arg {
+            if c == QUOTE {
+                escaped.extend(std::iter::repeat_n(
+                    BACKSLASH,
+                    num_consecutive_backslashes + 1,
+                ));
+
+                num_consecutive_backslashes = 0;
+            } else {
+                if c == SPACE || c == TAB {
                     has_spaces = true;
-                    escaped.push(whitespace)
                 }
-                other => escaped.push(other),
+
+                if c == BACKSLASH {
+                    num_consecutive_backslashes += 1;
+                } else {
+                    num_consecutive_backslashes = 0;
+                }
             }
+
+            escaped.push(c);
         }
 
         if has_spaces {
             escaped.insert(start_idx, QUOTE);
+            escaped.extend(std::iter::repeat_n(BACKSLASH, num_consecutive_backslashes));
             escaped.push(QUOTE);
         }
-
-        escaped.push(SPACE);
     }
-
-    // remove the trailing space
-    escaped.pop();
 
     // terminate the string
     escaped.push(0);
@@ -274,6 +279,24 @@ mod test {
         ];
 
         let escaped = into_wide_str(r#""a\\b c" d e"#);
+        assert_eq!(escaped, encode_windows_args(args));
+
+        let args = vec![
+            OsString::from(r#"a b\"#),
+            OsString::from(r#"d"#),
+            OsString::from(r#"e"#),
+        ];
+
+        let escaped = into_wide_str(r#""a b\\" d e"#);
+        assert_eq!(escaped, encode_windows_args(args));
+
+        let args = vec![
+            OsString::from(r#"a b\\"#),
+            OsString::from(r#"d"#),
+            OsString::from(r#"e"#),
+        ];
+
+        let escaped = into_wide_str(r#""a b\\\\" d e"#);
         assert_eq!(escaped, encode_windows_args(args));
     }
 }
