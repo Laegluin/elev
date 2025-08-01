@@ -123,9 +123,7 @@ fn find_runner() -> Result<PathBuf, io::Error> {
             ),
         };
 
-    let mut hasher = Sha256::new();
-    hasher.input(fs::read(&elev_run)?);
-    let actual_hash = hex::encode(hasher.result());
+    let actual_hash = hex::encode(Sha256::digest(fs::read(&elev_run)?));
 
     if expected_hash == actual_hash {
         Ok(elev_run)

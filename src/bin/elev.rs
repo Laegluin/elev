@@ -1,22 +1,21 @@
 #[cfg(not(windows))]
 compile_error!("this crate only supports windows");
 
-use clap::{crate_authors, crate_version, App, Arg};
+use clap::{crate_authors, crate_version, Arg, ArgAction, Command};
 use std::env;
 use std::ffi::OsString;
 use std::process;
 
 fn main() {
-    let app = App::new("elev")
+    let app = Command::new("elev")
         .version(crate_version!())
         .author(crate_authors!())
         .about("Runs a command as administrator.")
         .arg(
-            Arg::with_name("command-line")
+            Arg::new("command-line")
                 .help("The command and its arguments")
                 .required(true)
-                .takes_value(true)
-                .multiple(true),
+                .action(ArgAction::Append),
         );
 
     let args: Vec<_> = env::args_os().collect();
