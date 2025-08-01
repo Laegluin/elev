@@ -20,7 +20,7 @@ name = "elev"
 path = "src/bin/elev.rs"
 
 [dependencies]
-clap = { version = "4.5.42", features = ["cargo"]}
+clap = { version = "4.5.42", features = ["cargo"] }
 scopeguard = "1.2.0"
 termcolor = "1.4.1"
 sha2 = "0.10.9"
@@ -35,6 +35,7 @@ features = [
     "combaseapi",
     "ntdef",
     "objbase",
+    "handleapi",
     "synchapi",
     "winbase",
     "processthreadsapi",

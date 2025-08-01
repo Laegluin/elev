@@ -20,6 +20,7 @@ use winapi::shared::minwindef::FALSE;
 use winapi::shared::ntdef::NULL;
 use winapi::shared::winerror::{E_INVALIDARG, E_OUTOFMEMORY, E_UNEXPECTED};
 use winapi::um::combaseapi::{CoInitializeEx, CoUninitialize};
+use winapi::um::handleapi::CloseHandle;
 use winapi::um::objbase::{COINIT_APARTMENTTHREADED, COINIT_DISABLE_OLE1DDE};
 use winapi::um::processthreadsapi::GetExitCodeProcess;
 use winapi::um::shellapi::{
@@ -80,10 +81,12 @@ pub fn start_runner(command_line: impl IntoIterator<Item = OsString>) -> Result<
         defer!(CoUninitialize());
 
         try_win32!(ShellExecuteExW(&mut info), FALSE);
-
         if info.hProcess.is_null() {
             return io_err("the process handle is null");
         }
+        defer!({
+            CloseHandle(info.hProcess);
+        });
 
         try_win32!(WaitForSingleObject(info.hProcess, INFINITE), WAIT_FAILED);
 
